@@ -14,13 +14,6 @@ define get_binary
 	fi
 endef
 
-define create-ca
-  @mkdir -p pki/pem;\
-	cfssl gencert -initca pki/config/ca-csr.json | cfssljson -bare ca;\
-	mv ca.pem pki/pem;\
-	mv ca-key.pem pki/pem;\
-endef
-
 define sign-cert
   cfssl gencert \
 	  -ca=pki/pem/ca.pem \
@@ -32,15 +25,29 @@ define sign-cert
 	mv "$1-key.pem" pki/pem;
 endef
 
+define create-ca
+  mkdir -p pki/pem;\
+	cfssl gencert -initca pki/config/ca-csr.json | cfssljson -bare ca;\
+	mv ca.pem pki/pem;\
+	mv ca-key.pem pki/pem
+endef
+
 get-binaries: ## downloads precompiled versions of cfssl, cfssljson and kubectl to ./bin/ if not found in PATH
 	@mkdir -p bin
 	@$(call get_binary, ${CFSSL_URL},cfssl);
 	@$(call get_binary, ${CFSSLJSON_URL},cfssljson);
 	@$(call get_binary, ${KUBECTL_URL},kubectl);
 
+check-public-key: ## check that client's default public key file exists
+	@if [ ! -f "$${HOME}/.ssh/id_rsa.pub" ]; then\
+		echo "set ~/.ssh/id_rsa.pub or change default key file location for accessing AWS instances in tf/instances.tf";\
+		exit 1;\
+	fi
+
 aws-cli-check: ## Check AWS credentials are set 
 	@if [ -z "$${AWS_ACCESS_KEY_ID}" ] | [ -z "$${AWS_SECRET_ACCESS_KEY}" ];then\
 		echo "please set AWS secret access key and access key ID as environment variables first.";\
+		exit 1;\
 	fi
 
 create-pki: ## Create public key infrastructure

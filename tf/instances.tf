@@ -31,7 +31,7 @@ resource "aws_instance" "controller-nodes" {
   instance_type               = var.controller-instance-type
   key_name                    = aws_key_pair.controller-key.key_name
   associate_public_ip_address = true
-  vpc_security_group_ids      = [aws_security_group.mlops-internal, aws_security_group.mlops-external]
+  vpc_security_group_ids      = [aws_security_group.mlops-internal.id, aws_security_group.mlops-external.id]
   subnet_id                   = aws_subnet.mlops-subnet.id
   #private_ip                 = ["10.240.0.1${count.index + 1}"]
 
@@ -39,42 +39,40 @@ resource "aws_instance" "controller-nodes" {
     Name = "controller-node-${count.index + 1}"
   }
 
-  #depends_on = [aws_main_route_table_association.set-worker-default-rt-assoc, aws_instance.jenkins-master]
+  # if custom route table fails, instances are not reachable from the internet
+  depends_on = [aws_main_route_table_association.rt-assoc]
 
-  /*  provisioner "local-exec" {
-    command = <<EOF
-aws --profile ${var.profile} ec2 wait instance-status-ok --region ${var.region-worker} --instance-ids ${self.id}
-ansible-playbook --extra-vars 'passed_in_hosts=tag_Name_${self.tags.Name}' ansible/worker.yml
-EOF
-  }*/
+  root_block_device {
+    volume_size = var.controller-storage-size
+  }
+
 }
 
 
 # create controller node instances
-resource "aws_instance" "worker-nodes" {
+/*resource "aws_instance" "worker-nodes" {
   count                       = var.worker-count
   provider                    = aws.default-region
   ami                         = data.aws_ssm_parameter.linux-worker-ami.value
   instance_type               = var.worker-instance-type
   key_name                    = aws_key_pair.worker-key.key_name
   associate_public_ip_address = true
-  vpc_security_group_ids      = [aws_security_group.mlops-internal, aws_security_group.mlops-external]
+  vpc_security_group_ids      = [aws_security_group.mlops-internal.id, aws_security_group.mlops-external.id]
   subnet_id                   = aws_subnet.mlops-subnet.id
   #private_ip                 = ["10.240.0.2${count.index + 1}"]
 
   tags = {
     Name = "worker-node-${count.index + 1}"
   }
+  
+  # if custom route table fails, instances are not reachable from the internet
+  depends_on = [aws_main_route_table_association.rt-assoc]
 
-  #depends_on = [aws_main_route_table_association.set-worker-default-rt-assoc, aws_instance.jenkins-master]
+  root_block_device {
+    volume_size = var.controller-storage-size
+  }
 
-  /*  provisioner "local-exec" {
-    command = <<EOF
-aws --profile ${var.profile} ec2 wait instance-status-ok --region ${var.region-worker} --instance-ids ${self.id}
-ansible-playbook --extra-vars 'passed_in_hosts=tag_Name_${self.tags.Name}' ansible/worker.yml
-EOF
-  }*/
-}
+}*/
 
 
 

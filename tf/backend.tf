@@ -1,8 +1,8 @@
 terraform {
   required_version = ">=0.12.0"
   backend "s3" {
-    region = var.backend-region
+    region = "us-west-2"
     key    = "terraform-state-file"
-    bucket = var.backend-bucket
+    bucket = "mlops-tf-bucket"
   }
 }
