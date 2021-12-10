@@ -88,7 +88,8 @@ service-keys: #create K8 services' key pairs
   $(call make-service-keys,service-account-csr);
 
 worker-keys: #create Kubelet key pars for each worker node
-	@$(call sign-worker-certs);
+	@echo "$$(cd tf/ && terraform output -json)" | python3 py/create-worker-csrs.py;\
+  $(call sign-worker-certs);
 
 help:  ## Shows Makefile's help.
 	@sed -ne '/@sed/!s/## //p' $(MAKEFILE_LIST)
