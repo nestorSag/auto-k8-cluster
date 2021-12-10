@@ -41,7 +41,7 @@ define make-service-keys
 	mv $1.csr pki/csr
 endef
 
-define sign-worker-certs
+define make-worker-keys
   for path in pki/worker-csrs/*; do\
     filename="$$(basename $${path})";\
 	  cfssl gencert \
@@ -89,7 +89,7 @@ service-keys: #create K8 services' key pairs
 
 worker-keys: #create Kubelet key pars for each worker node
 	@echo "$$(cd tf/ && terraform output -json)" | python3 py/create-worker-csrs.py;\
-  $(call sign-worker-certs);
+  $(call make-worker-keys);
 
 help:  ## Shows Makefile's help.
 	@sed -ne '/@sed/!s/## //p' $(MAKEFILE_LIST)

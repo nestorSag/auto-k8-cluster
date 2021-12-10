@@ -23,63 +23,153 @@ resource "aws_subnet" "mlops-subnet" {
 }
 
 # security groups
-resource "aws_security_group" "mlops-internal" {
+resource "aws_security_group" "load-balancer-sg" {
+  provider    = aws.default-region
+  name        = "load balancer security group"
+  description = "Allow traffic from the internet and to K8 control plane"
+  vpc_id      = aws_vpc.mlops-vpc.id
+  ingress {
+    description = "HTTPS from the Internet"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  egress {
+    description = "redirection to K8 control plane"
+    from_port   = 443
+    to_port     = 6443
+    protocol    = "tcp"
+    cidr_blocks = ["10.240.0.0/24"]
+  }
+}
+
+
+resource "aws_security_group" "k8-control-plane-sg" {
   provider    = aws.default-region
   name        = "mlops-internal"
   description = "Allow traffic between K8 nodes"
   vpc_id      = aws_vpc.mlops-vpc.id
   ingress {
-    description = "Allow K8 port"
+    description = "etcd server client API"
+    from_port   = 2379
+    to_port     = 2379
+    protocol    = "tcp"
+    cidr_blocks = ["10.240.0.0/24"]
+  }
+  ingress {
+    description = "etcd server client API"
+    from_port   = 2380
+    to_port     = 2380
+    protocol    = "tcp"
+    cidr_blocks = ["10.240.0.0/24"]
+  }
+  ingress {
+    description = "K8 API server from subnet"
     from_port   = 6443
     to_port     = 6443
     protocol    = "tcp"
     cidr_blocks = ["10.240.0.0/24"]
   }
   ingress {
-    description = "Allow HTTPS from subnet"
-    from_port   = 443
-    to_port     = 443
+    description = "K8 API server from load balancer"
+    from_port   = 6443
+    to_port     = 6443
     protocol    = "tcp"
-    cidr_blocks = ["10.240.0.0/24"]
-
+    security_groups = [aws_security_group.load-balancer-sg.id]
   }
   ingress {
-    description = "Allow HTTP from subnet"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["10.240.0.0/24"]
-
-  }
-  ingress {
-    description = "Allow UDP from subnet"
-    from_port   = 0
-    to_port     = 0
+    description = "kube-scheduler"
+    from_port   = 10259
+    to_port     = 10259
     protocol    = "udp"
     cidr_blocks = ["10.240.0.0/24"]
-
   }
-  egress {
-    description = "Any"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+  ingress {
+    description = "kube-controller-manager"
+    from_port   = 10257
+    to_port     = 10257
+    protocol    = "udp"
+    cidr_blocks = ["10.240.0.0/24"]
+  }
+  ingress {
+    description = "Kubelet API server"
+    from_port   = 10250
+    to_port     = 10250
+    protocol    = "udp"
+    cidr_blocks = ["10.240.0.0/24"]
+  }
+  ingress {
+    description = "kubelet API server for read-only access "
+    from_port   = 10255
+    to_port     = 10255
+    protocol    = "udp"
+    cidr_blocks = ["10.240.0.0/24"]
+  }
+  ingress {
+    description = "Platform agent"
+    from_port   = 8090
+    to_port     = 8090
+    protocol    = "tcp"
+    cidr_blocks = ["10.240.0.0/24"]
+  }
+  ingress {
+    description = "Flanner overlay"
+    from_port   = 8472
+    to_port     = 8472
+    protocol    = "udp"
+    cidr_blocks = ["10.240.0.0/24"]
   }
 }
 
-resource "aws_security_group" "mlops-external" {
+resource "aws_security_group" "k8-data-plane-sg" {
+  provider    = aws.default-region
+  name        = "mlops-internal"
+  description = "Allow traffic between K8 nodes"
+  vpc_id      = aws_vpc.mlops-vpc.id
+  ingress {
+    description = "Kubelet API server"
+    from_port   = 10250
+    to_port     = 10250
+    protocol    = "udp"
+    cidr_blocks = ["10.240.0.0/24"]
+  }
+  ingress {
+    description = "kubelet API server for read-only access "
+    from_port   = 10255
+    to_port     = 10255
+    protocol    = "udp"
+    cidr_blocks = ["10.240.0.0/24"]
+  }
+  ingress {
+    description = "Platform agent"
+    from_port   = 8090
+    to_port     = 8090
+    protocol    = "tcp"
+    cidr_blocks = ["10.240.0.0/24"]
+  }
+  ingress {
+    description = "Flanner overlay"
+    from_port   = 8472
+    to_port     = 8472
+    protocol    = "udp"
+    cidr_blocks = ["10.240.0.0/24"]
+  }
+  ingress {
+    description = "node-to-node communication"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    self = true
+  }
+}
+
+
+resource "aws_security_group" "external-access-sg" {
   provider    = aws.default-region
   name        = "mlops-external"
   description = "Allow traffic between K8 nodes"
   vpc_id      = aws_vpc.mlops-vpc.id
-  ingress {
-    description = "Allow K8 API calls"
-    from_port   = 6443
-    to_port     = 6443
-    protocol    = "tcp"
-    cidr_blocks = [var.client_ip]
-  }
   ingress {
     description = "Allow icmp"
     from_port   = 0

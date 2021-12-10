@@ -18,7 +18,7 @@ variable "client_ip" {
 ### cluster size config
 variable "worker-count" {
   type    = number
-  default = 3
+  default = 2
 }
 
 variable "controller-count" {

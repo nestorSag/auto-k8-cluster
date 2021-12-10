@@ -31,7 +31,7 @@ resource "aws_instance" "controller-nodes" {
   instance_type               = var.controller-instance-type
   key_name                    = aws_key_pair.controller-key.key_name
   associate_public_ip_address = true
-  vpc_security_group_ids      = [aws_security_group.mlops-internal.id, aws_security_group.mlops-external.id]
+  vpc_security_group_ids      = [aws_security_group.k8-control-plane-sg.id, aws_security_group.external-access-sg.id]
   subnet_id                   = aws_subnet.mlops-subnet.id
   #private_ip                 = ["10.240.0.1${count.index + 1}"]
 
@@ -50,14 +50,14 @@ resource "aws_instance" "controller-nodes" {
 
 
 # create controller node instances
-/*resource "aws_instance" "worker-nodes" {
+resource "aws_instance" "worker-nodes" {
   count                       = var.worker-count
   provider                    = aws.default-region
   ami                         = data.aws_ssm_parameter.linux-worker-ami.value
   instance_type               = var.worker-instance-type
   key_name                    = aws_key_pair.worker-key.key_name
   associate_public_ip_address = true
-  vpc_security_group_ids      = [aws_security_group.mlops-internal.id, aws_security_group.mlops-external.id]
+  vpc_security_group_ids      = [aws_security_group.k8-data-plane-sg.id, aws_security_group.external-access-sg.id]
   subnet_id                   = aws_subnet.mlops-subnet.id
   #private_ip                 = ["10.240.0.2${count.index + 1}"]
 
@@ -72,7 +72,8 @@ resource "aws_instance" "controller-nodes" {
     volume_size = var.controller-storage-size
   }
 
-}*/
+
+}
 
 
 
