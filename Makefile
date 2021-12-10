@@ -1,8 +1,14 @@
-SHELL = /bin/bash
+SHELL=/bin/bash
+
+.PHONY= ca
 
 CFSSL_URL=https://github.com/cloudflare/cfssl/releases/download/v1.6.1/cfssl_1.6.1_linux_amd64
 CFSSLJSON_URL=https://github.com/cloudflare/cfssl/releases/download/v1.6.1/cfssljson_1.6.1_linux_amd64
 KUBECTL_URL=https://storage.googleapis.com/kubernetes-release/release/v1.21.0/bin/linux/amd64/kubectl
+
+define get_ips
+  cd tf/ && terraform output -json $1 | python -c "import json, sys; print(','.join(json.load(sys.stdin).values()))"
+endef 
 
 define get_binary
   if [ "$$(which $2)" = "" ]; then\
@@ -14,22 +20,41 @@ define get_binary
 	fi
 endef
 
-define sign-cert
-  cfssl gencert \
-	  -ca=pki/pem/ca.pem \
-	  -ca-key=pki/pem/ca-key.pem \
-	  -config=pki/config/ca-config.json \
-	  -profile=kubernetes \
-	  "kpi/config/$1.json" | cfssljson -bare "$1";\
-	mv "$1.pem" pki/pem;\
-	mv "$1-key.pem" pki/pem;
-endef
-
 define create-ca
   mkdir -p pki/pem;\
-	cfssl gencert -initca pki/config/ca-csr.json | cfssljson -bare ca;\
+  mkdir -p pki/csr;\
+	cfssl gencert -initca pki/service-csrs/ca-csr.json | cfssljson -bare ca;\
 	mv ca.pem pki/pem;\
-	mv ca-key.pem pki/pem
+	mv ca-key.pem pki/pem;\
+	mv ca.csr pki/csr
+endef
+
+define make-service-keys
+  cfssl gencert \
+	  -ca=./pki/pem/ca.pem \
+	  -ca-key=./pki/pem/ca-key.pem \
+	  -config=./pki/config/ca-config.json \
+	  -profile=kubernetes \
+	  "./pki/service-csrs/$1.json" | cfssljson -bare "$1";\
+	mv "$1.pem" pki/pem;\
+	mv "$1-key.pem" pki/pem;\
+	mv $1.csr pki/csr
+endef
+
+define sign-worker-certs
+  for path in pki/worker-csrs/*; do\
+    filename="$$(basename $${path})";\
+	  cfssl gencert \
+      -ca=pki/pem/ca.pem \
+      -ca-key=pki/pem/ca-key.pem \
+      -config=pki/config/ca-config.json \
+      -hostname="$${filename}" \
+      -profile=kubernetes \
+      "$${path}" | cfssljson -bare "$${filename}";\
+    mv "$${filename}.pem" pki/pem;\
+	  mv "$${filename}-key.pem" pki/pem;\
+	  mv "$${filename}.csr" pki/csr;\
+	done
 endef
 
 get-binaries: ## downloads precompiled versions of cfssl, cfssljson and kubectl to ./bin/ if not found in PATH
@@ -40,7 +65,7 @@ get-binaries: ## downloads precompiled versions of cfssl, cfssljson and kubectl 
 
 check-public-key: ## check that client's default public key file exists
 	@if [ ! -f "$${HOME}/.ssh/id_rsa.pub" ]; then\
-		echo "set ~/.ssh/id_rsa.pub or change default key file location for accessing AWS instances in tf/instances.tf";\
+		echo "set ~/.ssh/id_rsa.pub for accessing AWS instances through SSH";\
 		exit 1;\
 	fi
 
@@ -50,14 +75,20 @@ aws-cli-check: ## Check AWS credentials are set
 		exit 1;\
 	fi
 
-create-pki: ## Create public key infrastructure
+ca: ## Create public key infrastructure
 	$(call create-ca);
-	$(call sign-cert,admin-csr);
-	$(call sign-cert,kube-controller-manager-csr);
-	$(call sign-cert,kube-proxy-csr);
-	$(call sign-cert,kube-scheduler-csr);
-	$(call sign-cert,kubernetes-csr);
-	$(call sign-cert,service-account-csr);
+
+service-keys: #create K8 services' key pairs
+	@$(call make-service-keys,admin-csr);\
+	$(call make-service-keys,kube-controller-manager-csr);\
+  $(call make-service-keys,kube-proxy-csr);\
+  $(call make-service-keys,kube-scheduler-csr);\
+  $(call make-service-keys,kubernetes-csr);\
+  $(call make-service-keys,service-account-csr);\
+  $(call make-service-keys,service-account-csr);
+
+worker-keys: #create Kubelet key pars for each worker node
+	@$(call sign-worker-certs);
 
 help:  ## Shows Makefile's help.
 	@sed -ne '/@sed/!s/## //p' $(MAKEFILE_LIST)
