@@ -15,7 +15,17 @@ variable "client_ip" {
   default = "0.0.0.0/0"
 }
 
-### cluster size config
+### cluster config
+variable "vpc-cidr-block" {
+  type    = string
+  default = "10.240.0.0/16"
+}
+
+variable "subnet-count" {
+  type    = number
+  default = 2
+}
+
 variable "worker-count" {
   type    = number
   default = 2
@@ -23,7 +33,7 @@ variable "worker-count" {
 
 variable "controller-count" {
   type    = number
-  default = 1
+  default = 2
 }
 
 ### cluster nodes config

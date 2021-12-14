@@ -4,7 +4,7 @@ resource "aws_lb" "k8-load-balancer" {
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.load-balancer-sg.id]
-  subnets            = [aws_subnet.mlops-subnet.id]
+  subnets            = [for elem in aws_subnet.mlops-subnets : elem.id]
 
   tags = {
     Name = "k8-load-balancer"
@@ -17,7 +17,7 @@ resource "aws_lb_target_group" "control-plane-tg" {
   port        = 6443
   target_type = "instance"
   vpc_id      = aws_vpc.mlops-vpc.id
-  protocol    = "https"
+  protocol    = "HTTPS"
   health_check {
     enabled  = true
     interval = 10
@@ -28,7 +28,7 @@ resource "aws_lb_target_group" "control-plane-tg" {
   }
 
   tags = {
-    Name = "jenkins-target-group"
+    Name = "controllers-target-group"
   }
 
 }
@@ -45,7 +45,7 @@ resource "aws_lb_listener" "k8-api-listener" {
 }
 
 resource "aws_lb_target_group_attachment" "control-plane-tga" {
-  count = length(aws_instance.controller-nodes)
+  count            = length(aws_instance.controller-nodes)
   provider         = aws.default-region
   target_group_arn = aws_lb_target_group.control-plane-tg.arn
   target_id        = aws_instance.controller-nodes[count.index].id

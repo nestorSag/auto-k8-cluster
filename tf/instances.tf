@@ -31,8 +31,8 @@ resource "aws_instance" "controller-nodes" {
   instance_type               = var.controller-instance-type
   key_name                    = aws_key_pair.controller-key.key_name
   associate_public_ip_address = true
-  vpc_security_group_ids      = [aws_security_group.k8-control-plane-sg.id, aws_security_group.external-access-sg.id]
-  subnet_id                   = aws_subnet.mlops-subnet.id
+  vpc_security_group_ids      = [aws_security_group.k8-node-sg.id]
+  subnet_id                   = aws_subnet.mlops-subnets[count.index % length(aws_subnet.mlops-subnets)].id
   #private_ip                 = ["10.240.0.1${count.index + 1}"]
 
   tags = {
@@ -57,14 +57,14 @@ resource "aws_instance" "worker-nodes" {
   instance_type               = var.worker-instance-type
   key_name                    = aws_key_pair.worker-key.key_name
   associate_public_ip_address = true
-  vpc_security_group_ids      = [aws_security_group.k8-data-plane-sg.id, aws_security_group.external-access-sg.id]
-  subnet_id                   = aws_subnet.mlops-subnet.id
+  vpc_security_group_ids      = [aws_security_group.k8-node-sg.id]
+  subnet_id                   = aws_subnet.mlops-subnets[count.index % length(aws_subnet.mlops-subnets)].id
   #private_ip                 = ["10.240.0.2${count.index + 1}"]
 
   tags = {
     Name = "worker-node-${count.index + 1}"
   }
-  
+
   # if custom route table fails, instances are not reachable from the internet
   depends_on = [aws_main_route_table_association.rt-assoc]
 
