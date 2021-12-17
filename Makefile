@@ -75,6 +75,12 @@ aws-cli-check: ## Check AWS credentials are set
 		exit 1;\
 	fi
 
+ansible-check: ## Check if Ansible is installed
+	@if [ "$$(which ansible-playbook)" = "" ]; then\
+		echo "please install Ansible first.";\
+		exit 1;\
+	fi
+
 ca: ## Create public key infrastructure
 	$(call create-ca);
 

@@ -36,7 +36,7 @@ resource "aws_instance" "controller-nodes" {
   #private_ip                 = ["10.240.0.1${count.index + 1}"]
 
   tags = {
-    Name = "controller-node-${count.index + 1}"
+    Name = "controller-${count.index + 1}"
   }
 
   # if custom route table fails, instances are not reachable from the internet
@@ -62,7 +62,7 @@ resource "aws_instance" "worker-nodes" {
   #private_ip                 = ["10.240.0.2${count.index + 1}"]
 
   tags = {
-    Name = "worker-node-${count.index + 1}"
+    Name = "worker-${count.index + 1}"
   }
 
   # if custom route table fails, instances are not reachable from the internet
