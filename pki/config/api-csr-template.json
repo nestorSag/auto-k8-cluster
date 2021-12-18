@@ -1,5 +1,5 @@
 {
-  "CN": "system:node:INSTANCE_NAME",
+  "CN": "kubernetes",
   "key": {
     "algo": "rsa",
     "size": 2048
@@ -8,7 +8,7 @@
     {
       "C": "US",
       "L": "Portland",
-      "O": "system:nodes",
+      "O": "Kubernetes",
       "OU": "Kubernetes The Hard Way",
       "ST": "Oregon"
     }

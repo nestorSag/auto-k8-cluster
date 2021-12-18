@@ -26,6 +26,6 @@ output "worker-private-ips" {
   }
 }
 
-output "load-balancer-public-ips" {
+output "lb-dns" {
   value = aws_lb.k8-load-balancer.dns_name
 }

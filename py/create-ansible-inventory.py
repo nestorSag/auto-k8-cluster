@@ -2,9 +2,14 @@
 
 """
 import sys
+from pathlib import Path
 from utils import get_node_ips
 
-ips = get_node_ips(sys.stdin)
+# read stdin as string (which allows to reuse it if needed)
+with sys.stdin as f:
+  tf_json = f.read()
+
+ips = get_node_ips(tf_json)
 
 hostfile_content = ""
 for nodeset in ("worker", "controller"):
@@ -18,6 +23,6 @@ for nodeset in ("worker", "controller"):
   ]
   hostfile_content += "\n[{nodeset}]\n{lines}".format(nodeset=nodeset, lines="\n".join(node_lines))
 
-with open("./ansible/hosts", "w") as f:
+with open(Path("ansible") / "hosts", "w") as f:
   f.write(hostfile_content)
 

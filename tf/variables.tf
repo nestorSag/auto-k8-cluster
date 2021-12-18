@@ -28,12 +28,12 @@ variable "subnet-count" {
 
 variable "worker-count" {
   type    = number
-  default = 2
+  default = 1
 }
 
 variable "controller-count" {
   type    = number
-  default = 2
+  default = 1
 }
 
 ### cluster nodes config

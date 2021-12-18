@@ -31,15 +31,15 @@ resource "aws_security_group" "load-balancer-sg" {
   vpc_id      = aws_vpc.mlops-vpc.id
   ingress {
     description = "HTTPS from the Internet"
-    from_port   = 443
-    to_port     = 443
+    from_port   = 0
+    to_port     = 80
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
   egress {
     description = "redirection to K8 control plane"
-    from_port   = 443
-    to_port     = 6443
+    from_port   = 80
+    to_port     = 80
     protocol    = "tcp"
     cidr_blocks = [var.vpc-cidr-block]
   }
