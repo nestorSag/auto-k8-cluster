@@ -24,7 +24,7 @@ define create-ca
 endef
 
 define sign-certificate
-  FILENAME="$$(basename $1 .json)";\
+  FILENAME="$$(basename $1 -csr.json)";\
   cfssl gencert \
 	  -ca=./pki/pem/ca.pem \
 	  -ca-key=./pki/pem/ca-key.pem \
@@ -33,14 +33,17 @@ define sign-certificate
 	  "$1" | cfssljson -bare "$${FILENAME}";\
 	mv "$${FILENAME}.pem" pki/pem;\
 	mv "$${FILENAME}-key.pem" pki/pem;\
-	mv "$${FILENAME}.csr" pki/csr
+	mv "$${FILENAME}.csr" pki/cs
 endef
 
-get-binaries: ## downloads precompiled versions of cfssl, cfssljson and kubectl to ./bin/ if not found in PATH
-	@mkdir -p bin
-	@$(call get_binary, ${CFSSL_URL},cfssl);
-	@$(call get_binary, ${CFSSLJSON_URL},cfssljson);
-	@$(call get_binary, ${KUBECTL_URL},kubectl);
+setup: ## downloads precompiled versions of cfssl, cfssljson and kubectl to ./bin/ if not found in PATH; creates a certificate authority
+	@mkdir -p bin;\
+	$(call get_binary, ${CFSSL_URL},cfssl);\
+	$(call get_binary, ${CFSSLJSON_URL},cfssljson);\
+	$(call get_binary, ${KUBECTL_URL},kubectl);
+
+ca: ## Creates a certificate authority
+	$(call create-ca);
 
 check-ssh-key: ## check that client's default public key file exists
 	@if [ ! -f "$${HOME}/.ssh/id_rsa.pub" ]; then\
@@ -48,44 +51,47 @@ check-ssh-key: ## check that client's default public key file exists
 		exit 1;\
 	fi
 
-aws-cli-check: ## Check AWS credentials are set 
+check-aws-cli: ## Check AWS credentials are set 
 	@if [ -z "$${AWS_ACCESS_KEY_ID}" ] | [ -z "$${AWS_SECRET_ACCESS_KEY}" ];then\
 		echo "please set AWS secret access key and access key ID as environment variables first.";\
 		exit 1;\
 	fi
 
-ansible-check: ## Check if Ansible is installed
+check-ansible: ## Check if Ansible is installed
 	@if [ "$$(which ansible-playbook)" = "" ]; then\
 		echo "please install Ansible first.";\
 		exit 1;\
 	fi
 
-ca: ## Create certificate authority
-	$(call create-ca);\
-
 certs: ## create cluster certificates
 	@echo "$$(cd tf/ && terraform output -json)" | python py/create-worker-csrs.py;\
-  echo "$$(cd tf/ && terraform output -json)" | python py/create-api-csr.py;\
+	echo "$$(cd tf/ && terraform output -json)" | python py/create-api-csr.py;\
 	for crs in ./pki/worker-csrs/*; do\
-	  $(call sign-certificate,$${crs});\
+		$(call sign-certificate,$${crs});\
 	done;\
 	$(call sign-certificate,./pki/api-csr/api-csr.json);\
 	$(call sign-certificate,./pki/service-csrs/admin-csr.json);\
-  $(call sign-certificate,./pki/service-csrs/kube-controller-manager-csr.json);\
-  $(call sign-certificate,./pki/service-csrs/kube-proxy-csr.json);\
-  $(call sign-certificate,./pki/service-csrs/kube-scheduler-csr.json);\
-  $(call sign-certificate,./pki/service-csrs/service-account-csr.json);
+	$(call sign-certificate,./pki/service-csrs/kube-controller-manager-csr.json);\
+	$(call sign-certificate,./pki/service-csrs/kube-proxy-csr.json);\
+	$(call sign-certificate,./pki/service-csrs/kube-scheduler-csr.json);\
+	$(call sign-certificate,./pki/service-csrs/service-account-csr.json);
 
 	
-provision-infra: ## Provisions the cluster infrastructure in AWS using Terraform
+cluster-infra: ## Provisions the cluster infrastructure in AWS using Terraform
 	@cd tf/ && terraform apply -auto-approve
 
-provision-config: ## Configure cluster nodes using Ansible
+cluster-config: ## Configure cluster nodes using Ansible
 	@echo "$$(cd tf/ && terraform output -json)" | python py/create-ansible-inventory.py;\
-	ansible-playbook ansible/controller.yaml -i ./ansible/hosts;
+	ansible-playbook ansible/controller.yaml -i ./ansible/hosts -f 4;
 
 shutdown: ## Shuts down the cluster and destroy its resources
 	@cd tf/ && terraform destroy -auto-approve
+
+cluster:  ## Bootstrap Kubernetes cluster
+cluster: check-ssh-key check-aws-cli check-ansible
+	@$(MAKE) cluster-infra;\
+	$(MAKE) certs;\
+	$(MAKE) cluster-config;
 
 help:  ## Shows Makefile's help.
 	@sed -ne '/@sed/!s/## //p' $(MAKEFILE_LIST)

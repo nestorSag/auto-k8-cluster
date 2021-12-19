@@ -1,5 +1,5 @@
 ---
-- hosts: controller
+- hosts: worker
   become: yes
   remote_user: ec2-user
   become_user: root
@@ -20,8 +20,5 @@
         mode: 0644
       loop:
         - ./pki/pem/ca.pem
-        - ./pki/pem/ca-key.pem
-        - ./pki/pem/api.pem
-        - ./pki/pem/api-key.pem
-        - ./pki/pem/service-account.pem
-        - ./pki/pem/service-account-key.pem
+        - "./pki/pem/{{ ansible_host }}.pem"
+        - "./pki/pem/{{ ansible_host }}-key.pem"

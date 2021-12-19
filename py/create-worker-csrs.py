@@ -34,7 +34,7 @@ for idx, node in enumerate(worker_ids):
     worker_csr["hosts"] = [hostname, public_ip, private_ip]
     
   # save interpolated csr file
-  csr_file = str(outfolder / (hostname + ".json"))
+  csr_file = str(outfolder / (hostname + "-csr.json"))
   with open(csr_file,"w") as f:
     json.dump(worker_csr, f, indent=2)
 

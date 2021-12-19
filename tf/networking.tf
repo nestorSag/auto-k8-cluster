@@ -30,17 +30,17 @@ resource "aws_security_group" "load-balancer-sg" {
   description = "Allow traffic from the internet and to K8 control plane"
   vpc_id      = aws_vpc.mlops-vpc.id
   ingress {
-    description = "HTTPS from the Internet"
+    description = "Allow any traffic from the Internet"
     from_port   = 0
-    to_port     = 80
-    protocol    = "tcp"
+    to_port     = 0
+    protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
   egress {
-    description = "redirection to K8 control plane"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
+    description = "Allow to redirection to K8 control plane"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
     cidr_blocks = [var.vpc-cidr-block]
   }
 }
