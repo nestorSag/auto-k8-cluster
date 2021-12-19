@@ -24,5 +24,4 @@ Parameters such as the number of controller nodes and worker nodes can be edited
 
 ### Architecture
 
-![Alt text](./readme-imgs/cluster-architecture.svg)
 <img src="./readme-imgs/cluster-architecture.svg">
