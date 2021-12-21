@@ -11,6 +11,10 @@
       file:
         path: /cluster-certs
         state: directory
+    - name: create kubeconfig directory
+      file:
+        path: /kubeconfig
+        state: directory
     - name: Copy CA files
       copy:
         src: '{{item}}'
@@ -19,6 +23,16 @@
         group: ec2-user
         mode: 0644
       loop:
-        - ./pki/pem/ca.pem
-        - "./pki/pem/{{ ansible_host }}.pem"
-        - "./pki/pem/{{ ansible_host }}-key.pem"
+        - "{{ playbook_dir }}/../pki/pem/ca.pem"
+        - "{{ playbook_dir }}/../pki/pem/{{ inventory_hostname }}.pem"
+        - "{{ playbook_dir }}/../pki/pem/{{ inventory_hostname }}-key.pem"
+    - name: Copy kubeconfig files
+      copy:
+        src: '{{item}}'
+        dest: '/kubeconfig'
+        owner: ec2-user
+        group: ec2-user
+        mode: 0644
+      loop:
+        - "{{ playbook_dir }}/../kubecfg/{{ inventory_hostname }}.kubeconfig"
+        - "{{ playbook_dir }}/../kubecfg/kube-proxy.kubeconfig"

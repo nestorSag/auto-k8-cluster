@@ -1,6 +1,6 @@
 # DevOps/MLOps sandbox
 
-This project is a small testing ground for some popular DevOps and MLOps frameworks. As of now, the repository bootstraps a Kubernetes cluster from scratch on EC2 roughly following the [Kubernetes The Hard Way](https://github.com/kelseyhightower/kubernetes-the-hard-way) tutorial, but using Ansible and Terraform to streamline the whole process.
+This project is a small testing ground for some popular DevOps and MLOps frameworks. As of now, the repository bootstraps an ephemeral Kubernetes cluster from scratch on EC2 roughly following the [Kubernetes The Hard Way](https://github.com/kelseyhightower/kubernetes-the-hard-way) tutorial, but using Ansible and Terraform to streamline the whole process.
 
 # Requirements
 

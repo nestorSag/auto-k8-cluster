@@ -33,7 +33,7 @@ define sign-certificate
 	  "$1" | cfssljson -bare "$${FILENAME}";\
 	mv "$${FILENAME}.pem" pki/pem;\
 	mv "$${FILENAME}-key.pem" pki/pem;\
-	mv "$${FILENAME}.csr" pki/cs
+	mv "$${FILENAME}.csr" pki/csr
 endef
 
 setup: ## downloads precompiled versions of cfssl, cfssljson and kubectl to ./bin/ if not found in PATH; creates a certificate authority
@@ -81,8 +81,10 @@ cluster-infra: ## Provisions the cluster infrastructure in AWS using Terraform
 	@cd tf/ && terraform apply -auto-approve
 
 cluster-config: ## Configure cluster nodes using Ansible
+	./kubecfg/generate.sh;\
 	@echo "$$(cd tf/ && terraform output -json)" | python py/create-ansible-inventory.py;\
-	ansible-playbook ansible/controller.yaml -i ./ansible/hosts -f 4;
+	ansible-playbook ansible/controller.yaml -i ./ansible/hosts -f 4;\
+	ansible-playbook ansible/worker.yaml -i ./ansible/hosts -f 4;
 
 shutdown: ## Shuts down the cluster and destroy its resources
 	@cd tf/ && terraform destroy -auto-approve
@@ -92,6 +94,9 @@ cluster: check-ssh-key check-aws-cli check-ansible
 	@$(MAKE) cluster-infra;\
 	$(MAKE) certs;\
 	$(MAKE) cluster-config;
+
+# kubeconfig:
+# 	./kubecfg/generate.sh
 
 help:  ## Shows Makefile's help.
 	@sed -ne '/@sed/!s/## //p' $(MAKEFILE_LIST)
