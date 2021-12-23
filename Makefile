@@ -81,10 +81,10 @@ cluster-infra: ## Provisions the cluster infrastructure in AWS using Terraform
 	@cd tf/ && terraform apply -auto-approve
 
 cluster-config: ## Configure cluster nodes using Ansible
-	./kubecfg/generate.sh;\
-	@echo "$$(cd tf/ && terraform output -json)" | python py/create-ansible-inventory.py;\
-	ansible-playbook ansible/controller.yaml -i ./ansible/hosts -f 4;\
-	ansible-playbook ansible/worker.yaml -i ./ansible/hosts -f 4;
+	@./kubecfg/generate.sh;\
+	echo "$$(cd tf/ && terraform output -json)" | python py/create-ansible-inventory.py;\
+	ansible-playbook ansible/copy-config-to-controllers.yaml -i ./ansible/hosts -f 4;\
+	ansible-playbook ansible/bootstrap-etcd.yaml -i ./ansible/hosts -f 4
 
 shutdown: ## Shuts down the cluster and destroy its resources
 	@cd tf/ && terraform destroy -auto-approve

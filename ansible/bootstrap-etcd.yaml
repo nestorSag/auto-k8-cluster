@@ -1,0 +1,43 @@
+---
+- hosts: controller
+  become: yes
+  remote_user: ec2-user
+  become_user: root
+  tasks:
+    - name: create download folder
+      file:
+        path: /home/ec2-user/download
+        state: directory
+    - name: Download etcd
+      get_url:
+        url: https://github.com/etcd-io/etcd/releases/download/v3.4.15/etcd-v3.4.15-linux-amd64.tar.gz
+        dest: /home/ec2-user/download
+    - name: Extract etcd 
+      unarchive:
+        src: /home/ec2-user/download/etcd-v3.4.15-linux-amd64.tar.gz
+        dest: /home/ec2-user/download
+        remote_src: yes
+    - name: Move etcd binaries
+      command: mv /home/ec2-user/download/etcd-v3.4.15-linux-amd64/etcd /home/ec2-user/download/etcd-v3.4.15-linux-amd64/etcdctl /usr/local/bin/
+    - name: create /etc/etcd folder
+      file:
+        path: /etc/etcd
+        state: directory
+    - name: create /var/lib/etcd folder
+      file:
+        path: /var/lib/etcd
+        state: directory
+    - name: copy certificates
+      command: cp /home/ec2-user/cluster-certs/ca.pem /home/ec2-user/cluster-certs/api.pem /home/ec2-user/cluster-certs/api-key.pem  /etc/etcd
+    - name: Copy etcd service files
+      copy:
+        src: "{{ playbook_dir }}/../services/etcd-{{ inventory_hostname }}.service"
+        dest: '/etc/systemd/system/etcd.service'
+        owner: root
+        group: root
+        mode: 0644
+    - name: Start etcd service
+      ansible.builtin.systemd:
+        state: started
+        daemon_reload: yes
+        name: etcd

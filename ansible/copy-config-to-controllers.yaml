@@ -9,30 +9,38 @@
         name: "{{ ansible_host }}"
     - name: create cert directory
       file:
-        path: /cluster-certs
+        path: /home/ec2-user/cluster-certs
         state: directory
     - name: create kubeconfig directory
       file:
-        path: /kubeconfig
+        path: /home/ec2-user/kubeconfig
         state: directory
-    - name: Copy CA files
+    - name: Copy public CA files
       copy:
         src: '{{item}}'
-        dest: '/cluster-certs'
+        dest: '/home/ec2-user/cluster-certs'
         owner: ec2-user
         group: ec2-user
         mode: 0644
       loop:
         - "{{ playbook_dir }}/../pki/pem/ca.pem"
-        - "{{ playbook_dir }}/../pki/pem/ca-key.pem"
         - "{{ playbook_dir }}/../pki/pem/api.pem"
-        - "{{ playbook_dir }}/../pki/pem/api-key.pem"
         - "{{ playbook_dir }}/../pki/pem/service-account.pem"
+    - name: Copy private CA files
+      copy:
+        src: '{{item}}'
+        dest: '/home/ec2-user/cluster-certs'
+        owner: ec2-user
+        group: ec2-user
+        mode: 0600
+      loop:
+        - "{{ playbook_dir }}/../pki/pem/ca-key.pem"
+        - "{{ playbook_dir }}/../pki/pem/api-key.pem"
         - "{{ playbook_dir }}/../pki/pem/service-account-key.pem"
     - name: Copy kubeconfig files
       copy:
         src: '{{item}}'
-        dest: '/kubeconfig'
+        dest: '/home/ec2-user/kubeconfig'
         owner: ec2-user
         group: ec2-user
         mode: 0644
