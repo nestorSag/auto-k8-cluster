@@ -7,9 +7,6 @@ from pathlib import Path
 from utils import get_node_ips
 
 outfolder = Path("services")
-outfolder.mkdir(parents=True, exist_ok=True)
-for file in outfolder.iterdir():
-  os.remove(file)
 
 # read stdin as string (which allows to reuse it if needed)
 with sys.stdin as f:

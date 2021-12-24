@@ -23,7 +23,7 @@ variable "vpc-cidr-block" {
 
 variable "subnet-count" {
   type    = number
-  default = 2
+  default = 3
 }
 
 variable "worker-count" {

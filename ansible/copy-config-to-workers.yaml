@@ -28,13 +28,11 @@
         - "{{ playbook_dir }}/../pki/pem/{{ inventory_hostname }}-key.pem"
     - name: Copy private CA files
       copy:
-        src: '{{item}}'
+        src: "{{ playbook_dir }}/../pki/pem/{{ inventory_hostname }}-key.pem"
         dest: '/home/ec2-user/cluster-certs'
         owner: ec2-user
         group: ec2-user
         mode: 600
-      loop:
-        - "{{ playbook_dir }}/../pki/pem/{{ inventory_hostname }}-key.pem"
     - name: Copy kubeconfig files
       copy:
         src: '{{item}}'

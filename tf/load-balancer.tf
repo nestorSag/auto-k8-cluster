@@ -14,15 +14,15 @@ resource "aws_lb" "k8-load-balancer" {
 resource "aws_lb_target_group" "control-plane-tg" {
   provider    = aws.default-region
   name        = "controllers-tg"
-  port        = 80
+  port        = 6443
   target_type = "instance"
   vpc_id      = aws_vpc.mlops-vpc.id
-  protocol    = "HTTP"
+  protocol    = "TCP"
   health_check {
-    enabled  = true
+    enabled  = false
     interval = 10
     path     = "/"
-    port     = 80
+    port     = 6443
     protocol = "HTTP"
     matcher  = "200-299"
   }
@@ -36,8 +36,8 @@ resource "aws_lb_target_group" "control-plane-tg" {
 resource "aws_lb_listener" "k8-api-listener" {
   provider          = aws.default-region
   load_balancer_arn = aws_lb.k8-load-balancer.arn
-  port              = 80
-  protocol          = "HTTP"
+  port              = 6443
+  protocol          = "TCP"
   default_action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.control-plane-tg.id
@@ -49,5 +49,4 @@ resource "aws_lb_target_group_attachment" "control-plane-tga" {
   provider         = aws.default-region
   target_group_arn = aws_lb_target_group.control-plane-tg.arn
   target_id        = aws_instance.controller-nodes[count.index].id
-  port             = 80
 }

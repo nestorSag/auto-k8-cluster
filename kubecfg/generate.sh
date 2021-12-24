@@ -1,4 +1,4 @@
-# This file is supposed to be called by the makefile in the root folder
+# This file generates kubeconfig and encryption configuration files. It is supposed to be called by the makefile in the root folder
 
 rm -f ./kubecfg/*.kubeconfig
 

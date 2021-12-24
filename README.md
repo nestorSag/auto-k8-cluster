@@ -25,3 +25,5 @@ Parameters such as the number of controller nodes and worker nodes can be edited
 ### Architecture
 
 <img src="./readme-imgs/cluster-architecture.svg">
+
+Nodes of the same type can communicate directly

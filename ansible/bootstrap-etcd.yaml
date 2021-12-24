@@ -18,7 +18,10 @@
         dest: /home/ec2-user/download
         remote_src: yes
     - name: Move etcd binaries
-      command: mv /home/ec2-user/download/etcd-v3.4.15-linux-amd64/etcd /home/ec2-user/download/etcd-v3.4.15-linux-amd64/etcdctl /usr/local/bin/
+      command: |
+        mv /home/ec2-user/download/etcd-v3.4.15-linux-amd64/etcd \
+           /home/ec2-user/download/etcd-v3.4.15-linux-amd64/etcdctl \
+            /usr/local/bin/
     - name: create /etc/etcd folder
       file:
         path: /etc/etcd
@@ -28,7 +31,11 @@
         path: /var/lib/etcd
         state: directory
     - name: copy certificates
-      command: cp /home/ec2-user/cluster-certs/ca.pem /home/ec2-user/cluster-certs/api.pem /home/ec2-user/cluster-certs/api-key.pem  /etc/etcd
+      command: |
+        cp /home/ec2-user/cluster-certs/ca.pem \
+           /home/ec2-user/cluster-certs/api.pem \
+           /home/ec2-user/cluster-certs/api-key.pem  \
+           /etc/etcd
     - name: Copy etcd service files
       copy:
         src: "{{ playbook_dir }}/../services/etcd-{{ inventory_hostname }}.service"

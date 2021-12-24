@@ -1,0 +1,75 @@
+---
+- hosts: controller
+  become: yes
+  remote_user: ec2-user
+  become_user: root
+  tasks:
+    - name: Download Kubernetes binaries
+      get_url:
+        url: '{{ item }}'
+        dest: /home/ec2-user/download
+        mode: u+rwx
+      loop:
+        - "https://storage.googleapis.com/kubernetes-release/release/v1.21.0/bin/linux/amd64/kube-apiserver"
+        - "https://storage.googleapis.com/kubernetes-release/release/v1.21.0/bin/linux/amd64/kube-controller-manager"
+        - "https://storage.googleapis.com/kubernetes-release/release/v1.21.0/bin/linux/amd64/kube-scheduler"
+        - "https://storage.googleapis.com/kubernetes-release/release/v1.21.0/bin/linux/amd64/kubectl"
+    - name: Move binaries
+      command: |
+        mv /home/ec2-user/download/kube-apiserver \
+           /home/ec2-user/download/kube-controller-manager \
+           /home/ec2-user/download/kube-scheduler \
+           /home/ec2-user/download/kubectl \
+           /usr/local/bin
+    - name: create /var/lib/kubernetes folder
+      file:
+        path: /var/lib/kubernetes
+        state: directory
+    - name: create /etc/kubernetes/config folder
+      file:
+        path: /etc/kubernetes/config
+        state: directory
+    - name: copy certificates to /var/lib/kubernetes
+      command: |
+        cp /home/ec2-user/cluster-certs/ca.pem \
+           /home/ec2-user/cluster-certs/ca-key.pem \
+           /home/ec2-user/cluster-certs/api.pem \
+           /home/ec2-user/cluster-certs/api-key.pem \
+           /home/ec2-user/cluster-certs/service-account.pem \
+           /home/ec2-user/cluster-certs/service-account-key.pem \
+           /var/lib/kubernetes
+    - name: copy kubeconfig files to /var/lib/kubernetes
+      command: |
+        cp /home/ec2-user/kubeconfig/kube-scheduler.kubeconfig \
+           /home/ec2-user/kubeconfig/kube-controller-manager.kubeconfig \
+           /home/ec2-user/kubeconfig/encryption-config.yaml \
+           /home/ec2-user/kubeconfig/kube-scheduler.yaml \
+           /var/lib/kubernetes
+    - name: copy kubeconfig files to /etc/kubernetes/config
+      command: |
+        cp /home/ec2-user/kubeconfig/kube-scheduler.yaml \
+           /etc/kubernetes/config
+    - name: Copy kubernetes service files from remote
+      copy:
+        src: "{{ item }}"
+        dest: '/etc/systemd/system/'
+        owner: root
+        group: root
+        mode: 0644
+      loop:
+        - "{{ playbook_dir }}/../services/kube-scheduler.service"
+        - "{{ playbook_dir }}/../services/kube-controller-manager.service"
+        - "{{ playbook_dir }}/../services/kube-apiserver-{{ inventory_hostname }}.service"
+    - name: rename api service file
+      command: |
+        mv /etc/systemd/system/kube-apiserver-{{ inventory_hostname }}.service \
+           /etc/systemd/system/kube-apiserver.service 
+    - name: Start kubernetes services
+      ansible.builtin.systemd:
+        state: started
+        daemon_reload: yes
+        name: '{{ item }}'
+      loop:
+        - "kube-apiserver"
+        - "kube-controller-manager"
+        - "kube-scheduler"

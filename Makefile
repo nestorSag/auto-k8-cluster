@@ -64,8 +64,8 @@ check-ansible: ## Check if Ansible is installed
 	fi
 
 certs: ## create cluster certificates
-	@echo "$$(cd tf/ && terraform output -json)" | python py/create-worker-csrs.py;\
-	echo "$$(cd tf/ && terraform output -json)" | python py/create-api-csr.py;\
+	@cat ./tf_output.json | python py/create-worker-csrs.py;\
+	cat ./tf_output.json | python py/create-api-csr.py;\
 	for crs in ./pki/worker-csrs/*; do\
 		$(call sign-certificate,$${crs});\
 	done;\
@@ -77,13 +77,20 @@ certs: ## create cluster certificates
 	$(call sign-certificate,./pki/service-csrs/service-account-csr.json);
 
 	
-cluster-infra: ## Provisions the cluster infrastructure in AWS using Terraform
-	@cd tf/ && terraform apply -auto-approve
+cluster-infra: ## Provisions the cluster infrastructure in AWS using Terraform. Save node and LB IPs in a JSON file
+	@cd tf/ && terraform plan -out=../tf_plan.json && terraform apply ../tf_plan.json
+	echo "$$(cd tf/ && terraform output -json)" > ./tf_output.json
+	echo "Terraform output saved as tf_output.json; plan saved as tf_plan.json"
 
 cluster-config: ## Configure cluster nodes using Ansible
 	@./kubecfg/generate.sh;\
-	echo "$$(cd tf/ && terraform output -json)" | python py/create-ansible-inventory.py;\
+	cat ./tf_output.json | python py/create-ansible-inventory.py;\
+	rm -f ./services/*;\
+	cat ./tf_output.json | python py/create-etcd-service-files.py;\
+	cat ./tf_output.json | python py/create-kubernetes-service-files.py;\
+	echo "Copying config files and key pairs...";\
 	ansible-playbook ansible/copy-config-to-controllers.yaml -i ./ansible/hosts -f 4;\
+	echo "Bootstrapping etcd cluster...";\
 	ansible-playbook ansible/bootstrap-etcd.yaml -i ./ansible/hosts -f 4
 
 shutdown: ## Shuts down the cluster and destroy its resources
@@ -91,8 +98,11 @@ shutdown: ## Shuts down the cluster and destroy its resources
 
 cluster:  ## Bootstrap Kubernetes cluster
 cluster: check-ssh-key check-aws-cli check-ansible
-	@$(MAKE) cluster-infra;\
+	@echo "Provisioning cluster nodes and networking...";\
+	$(MAKE) cluster-infra;\
+	echo "Creating service key pairs";\
 	$(MAKE) certs;\
+	echo "Provisioning node configuration...";\
 	$(MAKE) cluster-config;
 
 # kubeconfig:
