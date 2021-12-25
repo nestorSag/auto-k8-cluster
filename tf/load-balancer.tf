@@ -2,8 +2,8 @@ resource "aws_lb" "k8-load-balancer" {
   provider           = aws.default-region
   name               = "k8-load-balancer"
   internal           = false
-  load_balancer_type = "application"
-  security_groups    = [aws_security_group.load-balancer-sg.id]
+  load_balancer_type = "network"
+  #security_groups    = [aws_security_group.load-balancer-sg.id]
   subnets            = [for elem in aws_subnet.mlops-subnets : elem.id]
 
   tags = {
@@ -19,12 +19,14 @@ resource "aws_lb_target_group" "control-plane-tg" {
   vpc_id      = aws_vpc.mlops-vpc.id
   protocol    = "TCP"
   health_check {
-    enabled  = false
-    interval = 10
-    path     = "/"
-    port     = 6443
+    enabled  = true
+    #healthy_threshold = 3
+    #unhealthy_threshold = 3
     protocol = "HTTP"
-    matcher  = "200-299"
+    port = 80
+    path = "/"
+    matcher = "200-399"
+    #interval = 30
   }
 
   tags = {

@@ -1,0 +1,27 @@
+---
+- hosts: controller
+  become: yes
+  remote_user: ec2-user
+  become_user: root
+  tasks:
+    - name: Install nginx
+      command: amazon-linux-extras install nginx1 -y
+    - name: Copy nginx file from remote
+      copy:
+        src: "{{ playbook_dir }}/../services/kubernetes.default.svc.cluster.local"
+        dest: '/etc/nginx/sites-available/'
+        owner: root
+        group: root
+        mode: 0644
+    - name: Create a symbolic link
+      ansible.builtin.file:
+        src: /etc/nginx/sites-available/kubernetes.default.svc.cluster.local
+        dest: /etc/nginx/sites-enabled/
+        owner: root
+        group: root
+        state: link
+    - name: Start nginx server
+      ansible.builtin.systemd:
+        state: started
+        daemon_reload: yes
+        name: nginx

@@ -24,7 +24,7 @@ resource "aws_subnet" "mlops-subnets" {
 }
 
 # security groups
-resource "aws_security_group" "load-balancer-sg" {
+/*resource "aws_security_group" "load-balancer-sg" {
   provider    = aws.default-region
   name        = "load balancer security group"
   description = "Allow traffic from the internet and to K8 control plane"
@@ -43,21 +43,21 @@ resource "aws_security_group" "load-balancer-sg" {
     protocol    = "-1"
     cidr_blocks = [var.vpc-cidr-block]
   }
-}
+}*/
 
 
 resource "aws_security_group" "k8-node-sg" {
   provider    = aws.default-region
-  name        = "k8-data-plane-sg"
+  name        = "k8-node-sg"
   description = "Allow traffic between K8 nodes"
   vpc_id      = aws_vpc.mlops-vpc.id
-  ingress {
+/*  ingress {
     description = "Allow ingress from load balancer as only valid ingress from the Internet other than SSH"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
     security_groups = [aws_security_group.load-balancer-sg.id]
-  }
+  }*/
   ingress {
     description = "Allow all inter-node communication"
     from_port   = 0
@@ -65,15 +65,8 @@ resource "aws_security_group" "k8-node-sg" {
     protocol    = "-1"
     self = true
   }
-  egress {
-    description = "Allow all inter-node communication"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    self = true
-  }
   ingress {
-    description = "Allow icmp"
+    description = "Allow icmp from anywhere"
     from_port   = 0
     to_port     = 0
     protocol    = "icmp"
@@ -87,6 +80,13 @@ resource "aws_security_group" "k8-node-sg" {
     cidr_blocks = [var.client_ip]
   }
   egress {
+    description = "Allow all inter-node communication"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    self = true
+  }
+  egress {
     description = "Allow Internet egress"
     from_port   = 0
     to_port     = 0
@@ -94,6 +94,29 @@ resource "aws_security_group" "k8-node-sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
+
+
+resource "aws_security_group" "control-plane-sg" {
+  provider    = aws.default-region
+  name        = "k8-control-plane-sg"
+  description = "Allow traffic between K8 nodes"
+  vpc_id      = aws_vpc.mlops-vpc.id
+  ingress {
+    description = "Allow health checks from NLB"
+    from_port   = 0
+    to_port     = 80
+    protocol    = "tcp"
+    self = true
+  }
+  ingress {
+    description = "Allow API calls from NLB"
+    from_port   = 0
+    to_port     = 6443
+    protocol    = "tcp"
+    cidr_blocks = [var.client_ip]
+  }
+}
+
 
 resource "aws_internet_gateway" "mlops-vpc-gateway" {
   provider = aws.default-region

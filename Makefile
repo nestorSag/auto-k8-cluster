@@ -91,7 +91,9 @@ cluster-config: ## Configure cluster nodes using Ansible
 	echo "Copying config files and key pairs...";\
 	ansible-playbook ansible/copy-config-to-controllers.yaml -i ./ansible/hosts -f 4;\
 	echo "Bootstrapping etcd cluster...";\
-	ansible-playbook ansible/bootstrap-etcd.yaml -i ./ansible/hosts -f 4
+	ansible-playbook ansible/bootstrap-etcd.yaml -i ./ansible/hosts -f 4;\
+	echo "Bootstrapping control plane...";\
+	ansible-playbook ansible/bootstrap-control-plane.yaml -i ./ansible/hosts -f 4
 
 shutdown: ## Shuts down the cluster and destroy its resources
 	@cd tf/ && terraform destroy -auto-approve

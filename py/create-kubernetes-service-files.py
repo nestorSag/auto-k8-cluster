@@ -1,4 +1,4 @@
-"""Generates kubernetes service unit files from Terraform's json output
+"""Generates kubernetes and proxy nginx service unit files from Terraform's json output
 
 """
 import os
@@ -19,7 +19,7 @@ node_ids = sorted(controllers.keys())
 # create etcd server name list string
 etcd_servers = []
 for idx, node in enumerate(node_ids):
-  server_name = "controller-{idx}=https://{private_ip}:2379".format(
+  server_name = "https://{private_ip}:2379".format(
     idx=idx, 
     private_ip=controllers[node]["private_ip"])
   etcd_servers.append(server_name)
@@ -44,17 +44,15 @@ for idx, node in enumerate(node_ids):
       LB_DNS=lb_dns)
   with open(outfolder / "kube-apiserver-controller-{idx}.service".format(idx=idx), "w") as f:
     f.write(service_file)
-    
-# copy kube-controller-manager file
-with open(Path("service-templates") / "kube-controller-manager.service", "r") as f:
-  service_file = f.read()
-with open(outfolder / "kube-controller-manager.service", "w") as f:
-  f.write(service_file)
-# copy kube-scheduler file
-with open(Path("service-templates") / "kube-scheduler.service", "r") as f:
-  service_file = f.read()
-with open(outfolder / "kube-scheduler.service", "w") as f:
-  f.write(service_file)
 
+# copy additional config files from template folder to service file folder
+files = [
+  "kube-controller-manager.service",
+  "kube-scheduler.service",
+  "kubernetes.default.svc.cluster.local"] # nginx health check server file
 
-
+for fl in files:
+  with open(Path("service-templates") / fl) as f:
+    service_file = f.read()
+  with open(outfolder / fl, "w") as f:
+    f.write(service_file)

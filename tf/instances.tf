@@ -31,7 +31,7 @@ resource "aws_instance" "controller-nodes" {
   instance_type               = var.controller-instance-type
   key_name                    = aws_key_pair.controller-key.key_name
   associate_public_ip_address = true
-  vpc_security_group_ids      = [aws_security_group.k8-node-sg.id]
+  vpc_security_group_ids      = [aws_security_group.k8-node-sg.id, aws_security_group.control-plane-sg.id]
   subnet_id                   = aws_subnet.mlops-subnets[count.index % length(aws_subnet.mlops-subnets)].id
   #private_ip                 = ["10.240.0.1${count.index + 1}"]
 
