@@ -50,3 +50,5 @@
         - "{{ playbook_dir }}/../kubecfg/kube-controller-manager.kubeconfig"
         - "{{ playbook_dir }}/../kubecfg/encryption-config.yaml"
         - "{{ playbook_dir }}/../kubecfg/kube-scheduler.yaml"
+        - "{{ playbook_dir }}/../kubecfg/api-rbac.yaml"
+        - "{{ playbook_dir }}/../kubecfg/api-rbac2.yaml"

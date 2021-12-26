@@ -8,18 +8,11 @@
       command: amazon-linux-extras install nginx1 -y
     - name: Copy nginx file from remote
       copy:
-        src: "{{ playbook_dir }}/../services/kubernetes.default.svc.cluster.local"
-        dest: '/etc/nginx/sites-available/'
+        src: "{{ playbook_dir }}/../nginx/health-check.conf"
+        dest: '/etc/nginx/conf.d/'
         owner: root
         group: root
         mode: 0644
-    - name: Create a symbolic link
-      ansible.builtin.file:
-        src: /etc/nginx/sites-available/kubernetes.default.svc.cluster.local
-        dest: /etc/nginx/sites-enabled/
-        owner: root
-        group: root
-        state: link
     - name: Start nginx server
       ansible.builtin.systemd:
         state: started

@@ -48,8 +48,7 @@ for idx, node in enumerate(node_ids):
 # copy additional config files from template folder to service file folder
 files = [
   "kube-controller-manager.service",
-  "kube-scheduler.service",
-  "kubernetes.default.svc.cluster.local"] # nginx health check server file
+  "kube-scheduler.service"] # nginx health check server file
 
 for fl in files:
   with open(Path("service-templates") / fl) as f:
