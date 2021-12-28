@@ -15,6 +15,10 @@
       file:
         path: /home/ec2-user/kubeconfig
         state: directory
+    - name: create kubeyaml directory
+      file:
+        path: /home/ec2-user/kubeyaml
+        state: directory
     - name: Copy public CA files
       copy:
         src: '{{item}}'
@@ -25,7 +29,6 @@
       loop:
         - "{{ playbook_dir }}/../pki/pem/ca.pem"
         - "{{ playbook_dir }}/../pki/pem/{{ inventory_hostname }}.pem"
-        - "{{ playbook_dir }}/../pki/pem/{{ inventory_hostname }}-key.pem"
     - name: Copy private CA files
       copy:
         src: "{{ playbook_dir }}/../pki/pem/{{ inventory_hostname }}-key.pem"
@@ -43,3 +46,23 @@
       loop:
         - "{{ playbook_dir }}/../kubecfg/{{ inventory_hostname }}.kubeconfig"
         - "{{ playbook_dir }}/../kubecfg/kube-proxy.kubeconfig"
+    - name: Copy kubeyaml files
+      copy:
+        src: '{{item}}'
+        dest: '/home/ec2-user/kubeyaml'
+        owner: ec2-user
+        group: ec2-user
+        mode: 0644
+      loop:
+        - "{{ playbook_dir }}/../kubeyaml/kubelet-config-{{ inventory_hostname }}.yaml"
+        - "{{ playbook_dir }}/../kubeyaml/kube-proxy-config.yaml"
+    - name: Copy network config files
+      copy:
+        src: '{{item}}'
+        dest: ' /etc/cni/net.d'
+        owner: ec2-user
+        group: ec2-user
+        mode: 0644
+      loop:
+        - "{{ playbook_dir }}/../network-conf/10-bridge-{{ inventory_hostname }}.conf"
+        - "{{ playbook_dir }}/../network-conf/99-loopback.conf"

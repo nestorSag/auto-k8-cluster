@@ -8,7 +8,7 @@
       get_url:
         url: '{{ item }}'
         dest: /home/ec2-user/download
-        mode: u+rwx, g+rx
+        mode: 0755
       loop:
         - "https://storage.googleapis.com/kubernetes-release/release/v1.21.0/bin/linux/amd64/kube-apiserver"
         - "https://storage.googleapis.com/kubernetes-release/release/v1.21.0/bin/linux/amd64/kube-controller-manager"
@@ -42,12 +42,12 @@
       command: |
         cp /home/ec2-user/kubeconfig/kube-scheduler.kubeconfig \
            /home/ec2-user/kubeconfig/kube-controller-manager.kubeconfig \
-           /home/ec2-user/kubeconfig/encryption-config.yaml \
-           /home/ec2-user/kubeconfig/kube-scheduler.yaml \
+           /home/ec2-user/kubeyaml/encryption-config.yaml \
+           /home/ec2-user/kubeyaml/kube-scheduler.yaml \
            /var/lib/kubernetes
     - name: copy kubeconfig files to /etc/kubernetes/config
       command: |
-        cp /home/ec2-user/kubeconfig/kube-scheduler.yaml \
+        cp /home/ec2-user/kubeyaml/kube-scheduler.yaml \
            /etc/kubernetes/config
     - name: Copy kubernetes service files from remote
       copy:
@@ -73,3 +73,9 @@
         - "kube-apiserver"
         - "kube-controller-manager"
         - "kube-scheduler"
+    - name: apply RBAC config (first controller only)
+      command: '{{ item }}'
+      when: inventory_hostname == "controller-0"
+    loop:
+      - "kubectl apply --kubeconfig /home/ec2-user/kubeconfig/admin.kubeconfig -f /home/ec2-user/kubeyaml/api-rbac.yaml"
+      - "kubectl apply --kubeconfig /home/ec2-user/kubeconfig/admin.kubeconfig -f /home/ec2-user/kubeyaml/api-rbac2.yaml"

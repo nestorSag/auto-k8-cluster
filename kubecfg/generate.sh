@@ -116,4 +116,4 @@ kubectl config use-context default --kubeconfig=admin.kubeconfig
 mv *.kubeconfig kubecfg/
 
 # create encryption configuration 
-(envsubst < ./pki/config/encryption-config.yaml) > ./kubecfg/encryption-config.yaml
+(envsubst < ./pki/config/encryption-config.yaml) > ./kubeyaml/encryption-config.yaml

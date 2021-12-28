@@ -1,0 +1,102 @@
+---
+- hosts: worker
+  become: yes
+  remote_user: ec2-user
+  become_user: root
+  tasks:
+    - name: Install dependencies
+      yum:
+        name: "{{ packages }}"
+      vars:
+        packages:
+        - socat
+        - conntrack
+        - ipset
+    - name: disable swap
+      command: sudo swapoff -a
+    - name: create /home/ec2-user/download folder
+      file:
+        path: /home/ec2-user/download
+        state: directory
+    - name: create /home/ec2-user/containerd folder
+      file:
+        path: /home/ec2-user/containerd
+        state: directory
+    - name: Download binaries 
+      get_url:
+        url: '{{ item }}'
+        dest: /home/ec2-user/download
+        mode: 0755
+      loop:
+        - "https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.21.0/crictl-v1.21.0-linux-amd64.tar.gz"
+        - "hhttps://github.com/opencontainers/runc/releases/download/v1.0.0-rc93/runc.amd64"
+        - "https://github.com/containernetworking/plugins/releases/download/v0.9.1/cni-plugins-linux-amd64-v0.9.1.tgz"
+        - "https://github.com/containerd/containerd/releases/download/v1.4.4/containerd-1.4.4-linux-amd64.tar.gz"
+        - "https://storage.googleapis.com/kubernetes-release/release/v1.21.0/bin/linux/amd64/kubectl"
+        - "https://storage.googleapis.com/kubernetes-release/release/v1.21.0/bin/linux/amd64/kube-proxy"
+        - "https://storage.googleapis.com/kubernetes-release/release/v1.21.0/bin/linux/amd64/kubelet"
+    - name: create additional folders
+      file:
+        path: '{{ dir }}'
+        state: directory
+      loop:
+        - "/etc/cni/net.d"
+        - "/opt/cni/bin"
+        - "/var/lib/kubelet"
+        - "/var/lib/kube-proxy"
+        - "/var/lib/kubernetes"
+        - "/var/run/kubernetes"
+    - name: Extract containerd 
+      unarchive:
+        src: /home/ec2-user/download/containerd-1.4.4-linux-amd64.tar.gz
+        dest: /home/ec2-user/containerd
+    - name: Extract cni  
+      unarchive:
+        src: /home/ec2-user/download/cni-plugins-linux-amd64-v0.9.1.tgz
+        dest: /opt/cni/bin
+    - name: Change executable permissions
+      command: cd /home/ec2-user/download && sudo mv runc.amd64 runc && chmod +x crictl kubectl kube-proxy kubelet runc
+    - name: Move binaried to /usr/local/bin
+      command: cd /home/ec2-user/download && sudo mv crictl kubectl kube-proxy kubelet runc /usr/local/bin/
+    - name: Move containerd to /usr/local/bin
+      command: cd /home/ec2-user/download && sudo mv /home/ec2-user/containerd/* /bin/
+    - name: Copy containerd files
+      copy:
+        src: '{{ playbook_dir }}/../containerd/config.toml'
+        dest: ' /etc/containerd/'
+        owner: ec2-user
+        group: ec2-user
+        mode: 0644
+    - name: Copy service files from remote
+      copy:
+        src: "{{ item }}"
+        dest: '/etc/systemd/system/'
+        owner: root
+        group: root
+        mode: 0644
+      loop:
+        - "{{ playbook_dir }}/../services/kube-proxy.service"
+        - "{{ playbook_dir }}/../services/kubelet.service"
+        - "{{ playbook_dir }}/../services/containerd.service"
+    - name: Move kubelet certificates
+      command: |
+        sudo mv \
+          /home/ec2-user/cluster-certs/{{ inventory_hostname }}.pem \
+          /home/ec2-user/cluster-certs/{{ inventory_hostname }}-key.pem \
+          /var/lib/kubelet/ 
+    - name: Move kubelet kubeconfig
+      command: |
+        sudo mv \
+          /home/ec2-user/kubeconfig/{{ inventory_hostname }}.kubeconfig \
+          /var/lib/kubelet/kubeconfig
+    - name: Move kueb-proxy kubeconfig
+      command: |
+        sudo mv \
+          /home/ec2-user/kubeconfig/kube-proxy.kubeconfig \
+          /var/lib/kube-proxy/kubeconfig
+    - name: Move public CA key
+      command: |
+        sudo mv \
+          /home/ec2-user/cluster-certs/ca.pem \
+          /var/lib/kubernetes
+        
