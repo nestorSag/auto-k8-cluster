@@ -76,6 +76,6 @@
     - name: apply RBAC config (first controller only)
       command: '{{ item }}'
       when: inventory_hostname == "controller-0"
-    loop:
-      - "kubectl apply --kubeconfig /home/ec2-user/kubeconfig/admin.kubeconfig -f /home/ec2-user/kubeyaml/api-rbac.yaml"
-      - "kubectl apply --kubeconfig /home/ec2-user/kubeconfig/admin.kubeconfig -f /home/ec2-user/kubeyaml/api-rbac2.yaml"
+      loop:
+        - "/usr/local/bin/kubectl apply --kubeconfig /home/ec2-user/kubeconfig/admin.kubeconfig -f /home/ec2-user/kubeyaml/api-rbac.yaml"
+        - "/usr/local/bin/kubectl apply --kubeconfig /home/ec2-user/kubeconfig/admin.kubeconfig -f /home/ec2-user/kubeyaml/api-rbac2.yaml"

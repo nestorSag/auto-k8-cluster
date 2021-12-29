@@ -36,7 +36,7 @@ define sign-certificate
 	mv "$${FILENAME}.csr" pki/csr
 endef
 
-setup: ## downloads precompiled versions of cfssl, cfssljson and kubectl to ./bin/ if not found in PATH; creates a certificate authority
+setup: ## downloads precompiled versions of cfssl, cfssljson and kubectl to ./bin/ if not found in PATH
 	@mkdir -p bin;\
 	$(call get_binary, ${CFSSL_URL},cfssl);\
 	$(call get_binary, ${CFSSLJSON_URL},cfssljson);\
@@ -84,20 +84,22 @@ cluster-infra: ## Provisions the cluster infrastructure in AWS using Terraform. 
 
 cluster-config: ## Configure cluster nodes using Ansible
 	@./kubecfg/generate.sh;\
+	rm -f ./services/* ./network-conf/*;\
 	cat ./tf_output.json | python py/create-ansible-inventory.py;\
-	rm -f ./services/*;\
 	cat ./tf_output.json | python py/create-etcd-service-files.py;\
 	cat ./tf_output.json | python py/create-kubernetes-service-files.py;\
-	echo "Copying config files and key pairs...";\
+	cat ./tf_output.json | python py/create-worker-config.py;\
 	ansible-playbook ansible/copy-config-to-controllers.yaml -i ./ansible/hosts -f 4;\
-	echo "Bootstrapping etcd cluster...";\
+	ansible-playbook ansible/copy-config-to-workers.yaml -i ./ansible/hosts -f 4;\
 	ansible-playbook ansible/bootstrap-etcd.yaml -i ./ansible/hosts -f 4;\
-	echo "Bootstrapping control plane...";\
 	ansible-playbook ansible/bootstrap-control-plane.yaml -i ./ansible/hosts -f 4;\
-	ansible-playbook ansible/set-nginx-health-check.yaml -i ./ansible/hosts -f 4
+	ansible-playbook ansible/bootstrap-data-plane.yaml -i ./ansible/hosts -f 4
 
-shutdown: ## Shuts down the cluster and destroy its resources
+shutdown: ## Shuts down the cluster and destroy its resources; unsets corresponding kubectl config
 	@cd tf/ && terraform destroy -auto-approve
+	kubectl config unset contexts.mlops-cluster
+	kubectl config unset users.admin
+	kubectl config unset clusters.mlops-cluster
 
 cluster:  ## Bootstrap Kubernetes cluster
 cluster: check-ssh-key check-aws-cli check-ansible

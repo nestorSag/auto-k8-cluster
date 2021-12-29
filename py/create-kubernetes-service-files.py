@@ -14,6 +14,7 @@ with sys.stdin as f:
 
 ips = get_node_ips(tf_json)
 controllers = ips["controller"]
+workers = ips["worker"]
 node_ids = sorted(controllers.keys())
 
 # create etcd server name list string
@@ -45,12 +46,23 @@ for idx, node in enumerate(node_ids):
   with open(outfolder / "kube-apiserver-controller-{idx}.service".format(idx=idx), "w") as f:
     f.write(service_file)
 
+# create kubelet service files 
+node_ids = sorted(workers.keys())
+for idx, node in enumerate(node_ids):
+  hostname = "worker-{idx}".format(idx=idx)
+  # create kube-apiserver file
+  with open(Path("service-templates") / "kubelet.service", "r") as f:
+    service_file = f.read().format(
+      HOSTNAME=hostname)
+  with open(outfolder / "kubelet-worker-{idx}.service".format(idx=idx), "w") as f:
+    f.write(service_file)
+
+
 # copy additional config files from template folder to service file folder
 files = [
   "kube-controller-manager.service",
   "kube-scheduler.service",
   "kube-proxy.service",
-  "kubelet.service",
   "containerd.service"] # nginx health check server file
 
 for fl in files:

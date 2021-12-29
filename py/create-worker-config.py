@@ -1,4 +1,4 @@
-"""Generates kubernetes and networking configuration files for worker nodes
+"""Generates yaml and networking configuration files for worker nodes
 
 """
 import os
@@ -12,7 +12,7 @@ with sys.stdin as f:
 
 ips = get_node_ips(tf_json)
 workers = ips["worker"]
-node_ids = sorted(controllers.keys())
+node_ids = sorted(workers.keys())
 
 # create kubelet config yaml file
 for idx, node in enumerate(node_ids):
@@ -26,7 +26,12 @@ for idx, node in enumerate(node_ids):
     f.write(service_file)
 
   with open(Path("network-conf-templates") / "10-bridge.conf", "r") as f:
-    network_conf = f.read().format(
-      POD_CIDR=pod_cidr)
-  with open("network-conf" / "10-bridge-{hostname}.conf".format(hostname=hostname), "w") as f:
-    f.write(service_file)
+    network_conf = f.read().replace("POD_CIDR", pod_cidr)
+  with open(Path("network-conf" ) / "10-bridge-{hostname}.conf".format(hostname=hostname), "w") as f:
+    f.write(network_conf)
+
+  # copy config file as is
+  with open(Path("network-conf-templates") / "99-loopback.conf", "r") as f:
+    conf = f.read()
+  with open(Path("network-conf" ) / "99-loopback.conf", "w") as f:
+    f.write(conf)

@@ -5,7 +5,7 @@
   become_user: root
   tasks:
     - name: overwrite hostname
-      hostname: 
+      ansible.builtin.hostname: 
         name: "{{ ansible_host }}"
     - name: create cert directory
       file:
@@ -19,6 +19,26 @@
       file:
         path: /home/ec2-user/kubeyaml
         state: directory
+    - name: create /home/ec2-user/download folder
+      file:
+        path: /home/ec2-user/download
+        state: directory
+    - name: create /home/ec2-user/containerd folder
+      file:
+        path: /home/ec2-user/containerd
+        state: directory
+    - name: create additional folders
+      file:
+        path: '{{ item }}'
+        state: directory
+      loop:
+        - "/etc/cni/net.d"
+        - "/etc/containerd"
+        - "/opt/cni/bin"
+        - "/var/lib/kubelet"
+        - "/var/lib/kube-proxy"
+        - "/var/lib/kubernetes"
+        - "/var/run/kubernetes"
     - name: Copy public CA files
       copy:
         src: '{{item}}'
@@ -59,10 +79,28 @@
     - name: Copy network config files
       copy:
         src: '{{item}}'
-        dest: ' /etc/cni/net.d'
+        dest: '/etc/cni/net.d'
         owner: ec2-user
         group: ec2-user
         mode: 0644
       loop:
         - "{{ playbook_dir }}/../network-conf/10-bridge-{{ inventory_hostname }}.conf"
         - "{{ playbook_dir }}/../network-conf/99-loopback.conf"
+    - name: Copy containerd files
+      copy:
+        src: '{{ playbook_dir }}/../containerd/config.toml'
+        dest: '/etc/containerd/'
+        owner: ec2-user
+        group: ec2-user
+        mode: 0644
+    - name: Copy service files from remote
+      copy:
+        src: "{{ item }}"
+        dest: '/etc/systemd/system/'
+        owner: root
+        group: root
+        mode: 0644
+      loop:
+        - "{{ playbook_dir }}/../services/kube-proxy.service"
+        - "{{ playbook_dir }}/../services/kubelet-{{ inventory_hostname }}.service"
+        - "{{ playbook_dir }}/../services/containerd.service"

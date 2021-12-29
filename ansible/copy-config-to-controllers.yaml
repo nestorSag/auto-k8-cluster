@@ -5,7 +5,7 @@
   become_user: root
   tasks:
     - name: overwrite hostname
-      hostname: 
+      ansible.builtin.hostname: 
         name: "{{ ansible_host }}"
     - name: create cert directory
       file:
@@ -52,13 +52,14 @@
         - "{{ playbook_dir }}/../kubecfg/admin.kubeconfig"
         - "{{ playbook_dir }}/../kubecfg/kube-scheduler.kubeconfig"
         - "{{ playbook_dir }}/../kubecfg/kube-controller-manager.kubeconfig"
-     name: Copy kubeyaml files
+    - name: Copy kubeyaml files
       copy:
         src: '{{item}}'
         dest: '/home/ec2-user/kubeyaml'
         owner: ec2-user
         group: ec2-user
         mode: 0644
+      loop:
         - "{{ playbook_dir }}/../kubeyaml/encryption-config.yaml"
         - "{{ playbook_dir }}/../kubeyaml/kube-scheduler.yaml"
         - "{{ playbook_dir }}/../kubeyaml/api-rbac.yaml"

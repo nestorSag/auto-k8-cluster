@@ -1,4 +1,4 @@
-# This file generates kubeconfig and encryption configuration files. It is supposed to be called by the makefile in the root folder
+# This file generates kubeconfig and encryption configuration files; it also sets the local kubectl context. It is supposed to be called by the makefile in the root folder
 
 rm -f ./kubecfg/*.kubeconfig
 
@@ -114,6 +114,25 @@ kubectl config set-context default \
 kubectl config use-context default --kubeconfig=admin.kubeconfig
 
 mv *.kubeconfig kubecfg/
+
+
+## set local kubectl configuration
+
+kubectl config set-cluster mlops-cluster \
+  --certificate-authority=./pki/pem/ca.pem \
+  --embed-certs=true \
+  --server=https://${LOAD_BALANCER_DNS}:6443
+
+kubectl config set-credentials admin \
+  --client-certificate=./pki/pem/admin.pem \
+  --client-key=./pki/pem/admin-key.pem
+
+kubectl config set-context mlops-cluster \
+  --cluster=mlops-cluster \
+  --user=admin
+
+kubectl config use-context mlops-cluster
+
 
 # create encryption configuration 
 (envsubst < ./pki/config/encryption-config.yaml) > ./kubeyaml/encryption-config.yaml

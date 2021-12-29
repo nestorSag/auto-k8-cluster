@@ -14,14 +14,6 @@
         - ipset
     - name: disable swap
       command: sudo swapoff -a
-    - name: create /home/ec2-user/download folder
-      file:
-        path: /home/ec2-user/download
-        state: directory
-    - name: create /home/ec2-user/containerd folder
-      file:
-        path: /home/ec2-user/containerd
-        state: directory
     - name: Download binaries 
       get_url:
         url: '{{ item }}'
@@ -29,55 +21,33 @@
         mode: 0755
       loop:
         - "https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.21.0/crictl-v1.21.0-linux-amd64.tar.gz"
-        - "hhttps://github.com/opencontainers/runc/releases/download/v1.0.0-rc93/runc.amd64"
+        - "https://github.com/opencontainers/runc/releases/download/v1.0.0-rc93/runc.amd64"
         - "https://github.com/containernetworking/plugins/releases/download/v0.9.1/cni-plugins-linux-amd64-v0.9.1.tgz"
         - "https://github.com/containerd/containerd/releases/download/v1.4.4/containerd-1.4.4-linux-amd64.tar.gz"
         - "https://storage.googleapis.com/kubernetes-release/release/v1.21.0/bin/linux/amd64/kubectl"
         - "https://storage.googleapis.com/kubernetes-release/release/v1.21.0/bin/linux/amd64/kube-proxy"
         - "https://storage.googleapis.com/kubernetes-release/release/v1.21.0/bin/linux/amd64/kubelet"
-    - name: create additional folders
-      file:
-        path: '{{ dir }}'
-        state: directory
-      loop:
-        - "/etc/cni/net.d"
-        - "/opt/cni/bin"
-        - "/var/lib/kubelet"
-        - "/var/lib/kube-proxy"
-        - "/var/lib/kubernetes"
-        - "/var/run/kubernetes"
     - name: Extract containerd 
       unarchive:
         src: /home/ec2-user/download/containerd-1.4.4-linux-amd64.tar.gz
         dest: /home/ec2-user/containerd
+        remote_src: yes
     - name: Extract cni  
       unarchive:
         src: /home/ec2-user/download/cni-plugins-linux-amd64-v0.9.1.tgz
         dest: /opt/cni/bin
-    - name: Change executable permissions
-      command: cd /home/ec2-user/download && sudo mv runc.amd64 runc && chmod +x crictl kubectl kube-proxy kubelet runc
+        remote_src: yes
+    - name: Extract crictl  
+      unarchive:
+        src: /home/ec2-user/download/crictl-v1.21.0-linux-amd64.tar.gz
+        dest: /home/ec2-user/download
+        remote_src: yes
+    - name: Change name to runc
+      command: /usr/bin/bash -c 'cd /home/ec2-user/download && sudo mv ./runc.amd64 ./runc'
     - name: Move binaried to /usr/local/bin
-      command: cd /home/ec2-user/download && sudo mv crictl kubectl kube-proxy kubelet runc /usr/local/bin/
-    - name: Move containerd to /usr/local/bin
-      command: cd /home/ec2-user/download && sudo mv /home/ec2-user/containerd/* /bin/
-    - name: Copy containerd files
-      copy:
-        src: '{{ playbook_dir }}/../containerd/config.toml'
-        dest: ' /etc/containerd/'
-        owner: ec2-user
-        group: ec2-user
-        mode: 0644
-    - name: Copy service files from remote
-      copy:
-        src: "{{ item }}"
-        dest: '/etc/systemd/system/'
-        owner: root
-        group: root
-        mode: 0644
-      loop:
-        - "{{ playbook_dir }}/../services/kube-proxy.service"
-        - "{{ playbook_dir }}/../services/kubelet.service"
-        - "{{ playbook_dir }}/../services/containerd.service"
+      command: /usr/bin/bash -c 'cd /home/ec2-user/download && sudo mv crictl kubectl kube-proxy kubelet runc /usr/local/bin/'
+    - name: Move containerd to /bin
+      command: /usr/bin/bash -c 'sudo mv /home/ec2-user/containerd/bin/* /bin/'
     - name: Move kubelet certificates
       command: |
         sudo mv \
@@ -89,7 +59,7 @@
         sudo mv \
           /home/ec2-user/kubeconfig/{{ inventory_hostname }}.kubeconfig \
           /var/lib/kubelet/kubeconfig
-    - name: Move kueb-proxy kubeconfig
+    - name: Move kube-proxy kubeconfig
       command: |
         sudo mv \
           /home/ec2-user/kubeconfig/kube-proxy.kubeconfig \
@@ -99,4 +69,28 @@
         sudo mv \
           /home/ec2-user/cluster-certs/ca.pem \
           /var/lib/kubernetes
+    - name: Move kubelet yaml config
+      command: |
+        sudo mv \
+          /home/ec2-user/kubeyaml/kubelet-config-{{ inventory_hostname }}.yaml \
+          /var/lib/kubelet/kubelet-config.yaml
+    - name: Move kube-proxy yaml config
+      command: |
+        sudo mv \
+          /home/ec2-user/kubeyaml/kube-proxy-config.yaml \
+          /var/lib/kube-proxy/
+    - name: Rename kubelet service file
+      command: |
+        sudo mv \
+          /etc/systemd/system/kubelet-{{ inventory_hostname }}.service \
+          /etc/systemd/system/kubelet.service
+    - name: Start services
+      ansible.builtin.systemd:
+        state: started
+        daemon_reload: yes
+        name: '{{ item }}'
+      loop:
+        - "containerd"
+        - "kubelet"
+        - "kube-proxy"
         
