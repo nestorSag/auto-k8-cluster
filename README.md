@@ -1,6 +1,6 @@
 # DevOps/MLOps sandbox
 
-This project is a small testing ground for some popular DevOps and MLOps frameworks. As of now, the repository bootstraps an ephemeral Kubernetes cluster from scratch on EC2 roughly following the [Kubernetes The Hard Way](https://github.com/kelseyhightower/kubernetes-the-hard-way) tutorial, but using Ansible and Terraform to streamline the whole process.
+This project is a small testing ground for some popular DevOps and MLOps frameworks. It bootstraps an ephemeral, highly available Kubernetes cluster from scratch on EC2 instances roughly following the [Kubernetes The Hard Way](https://github.com/kelseyhightower/kubernetes-the-hard-way) tutorial, but using Ansible and Terraform to streamline the whole process.
 
 # Requirements
 
@@ -20,7 +20,7 @@ Parameters such as the number of controller nodes and worker nodes can be edited
 
 2. From the root folder, run `make setup && export PATH=$(pwd)/bin:$PATH && make ca`. This will download precompiled binaries for `kubectl`, `cfssl` and `cfssljson` to the `bin` folder and add it to `PATH`. It will also bootstrap a certificate authority
 
-3. Run `make cluster`. This might take a few minutes.
+3. Run `make cluster`. This might take a while.
 
 ### Architecture
 
