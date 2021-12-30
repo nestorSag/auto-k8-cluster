@@ -1,6 +1,6 @@
-# DevOps/MLOps sandbox
+# auto-k8-cluster
 
-This project is a small testing ground for some popular DevOps and MLOps frameworks. It bootstraps an ephemeral, highly available Kubernetes cluster from scratch on EC2 instances roughly following the [Kubernetes The Hard Way](https://github.com/kelseyhightower/kubernetes-the-hard-way) tutorial, but using Ansible and Terraform to streamline the whole process.
+This project is a personal testing ground for some DevOps technologies. The repo bootstraps an ephemeral, highly available Kubernetes cluster from scratch on EC2 instances roughly following the [Kubernetes The Hard Way](https://github.com/kelseyhightower/kubernetes-the-hard-way) tutorial, but using Ansible and Terraform to streamline the whole process.
 
 # Requirements
 
@@ -20,7 +20,7 @@ Parameters such as the number of controller nodes and worker nodes can be edited
 
 2. From the root folder, run `make setup && export PATH=$(pwd)/bin:$PATH && make ca`. This will download precompiled binaries for `kubectl`, `cfssl` and `cfssljson` to the `bin` folder and add it to `PATH`. It will also bootstrap a certificate authority
 
-3. If necessary, run `cd tf/ && terraform init` to initialise Terraform
+3. Run `cd tf/ && terraform init` to initialise Terraform
 
 4. From the root folder, run `make cluster`. This will take a while.
 
@@ -34,10 +34,10 @@ Nodes of the same type can communicate directly
 
 Terraform provisions the infrastructure according to files in the `tf` folder; python scripts in `py` use Terraform's formatted output to create configuration files at runtime using information of the instances' IP addresses. Specifically they create:
 
-* The Ansible inventory
+* the Ansible inventory
 * certificate signing requests
 * service unit files
 * networking configuration
 * entries in the routing table
 
-Ansible is then used to place config files n each node and start the services.
+Ansible is then used to place config files in each node and start the services.
