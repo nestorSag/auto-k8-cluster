@@ -29,3 +29,7 @@ output "worker-private-ips" {
 output "lb-dns" {
   value = aws_lb.k8-load-balancer.dns_name
 }
+
+output "routing-table-id" {
+  value = aws_route_table.mlops-vpc-route-table.id
+}

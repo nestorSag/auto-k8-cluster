@@ -78,13 +78,14 @@ certs: ## create cluster certificates
 
 	
 cluster-infra: ## Provisions the cluster infrastructure in AWS using Terraform. Save node and LB IPs in a JSON file
-	@cd tf/ && terraform plan -out=../tf_plan.json && terraform apply ../tf_plan.json
+	@echo "Planning.."
+	cd tf/ && terraform plan -out=../tf_plan.json && terraform apply ../tf_plan.json
 	echo "$$(cd tf/ && terraform output -json)" > ./tf_output.json
 	echo "Terraform output saved as tf_output.json; plan saved as tf_plan.json"
 
 cluster-config: ## Configure cluster nodes using Ansible
 	@./kubecfg/generate.sh;\
-	rm -f ./services/* ./network-conf/*;\
+	rm -f ./services/* ./network-conf/* ./tf/route-*;\
 	cat ./tf_output.json | python py/create-ansible-inventory.py;\
 	cat ./tf_output.json | python py/create-etcd-service-files.py;\
 	cat ./tf_output.json | python py/create-kubernetes-service-files.py;\
@@ -95,20 +96,25 @@ cluster-config: ## Configure cluster nodes using Ansible
 	ansible-playbook ansible/bootstrap-control-plane.yaml -i ./ansible/hosts -f 4;\
 	ansible-playbook ansible/bootstrap-data-plane.yaml -i ./ansible/hosts -f 4
 
-shutdown: ## Shuts down the cluster and destroy its resources; unsets corresponding kubectl config
-	@cd tf/ && terraform destroy -auto-approve
-	kubectl config unset contexts.mlops-cluster
-	kubectl config unset users.admin
-	kubectl config unset clusters.mlops-cluster
+cluster-networking: ## Configure cluster routing and DNS
+	@cat ./tf_output.json | python py/create-cidr-routes.py;\
+	cd tf/ && terraform apply --auto-approve;\
+	kubectl apply -f https://storage.googleapis.com/kubernetes-the-hard-way/coredns-1.8.yaml;\
+
+shutdown: ## Shuts down the cluster and destroy its resources; unsets corresponding kubectl config and deletes dynamically created tf files
+	@cd tf/ && terraform destroy -auto-approve;\
+	kubectl config unset contexts.mlops-cluster;\
+	kubectl config unset users.admin;\
+	kubectl config unset clusters.mlops-cluster;\
+	rm -f ./tf/route-*;\
 
 cluster:  ## Bootstrap Kubernetes cluster
 cluster: check-ssh-key check-aws-cli check-ansible
-	@echo "Provisioning cluster nodes and networking...";\
-	$(MAKE) cluster-infra;\
-	echo "Creating service key pairs";\
+	@$(MAKE) cluster-infra;\
 	$(MAKE) certs;\
-	echo "Provisioning node configuration...";\
-	$(MAKE) cluster-config;
+	$(MAKE) cluster-config;\
+	$(MAKE) cluster-networking;\
+	echo "Cluster set as default in kubectl; admin user set as default"
 
 # kubeconfig:
 # 	./kubecfg/generate.sh

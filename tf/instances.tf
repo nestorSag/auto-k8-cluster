@@ -33,7 +33,6 @@ resource "aws_instance" "controller-nodes" {
   associate_public_ip_address = true
   vpc_security_group_ids      = [aws_security_group.k8-node-sg.id, aws_security_group.control-plane-sg.id]
   subnet_id                   = aws_subnet.mlops-subnets[count.index % length(aws_subnet.mlops-subnets)].id
-  #private_ip                 = ["10.240.0.1${count.index + 1}"]
 
   tags = {
     Name = "controller-${count.index + 1}"
@@ -59,7 +58,6 @@ resource "aws_instance" "worker-nodes" {
   associate_public_ip_address = true
   vpc_security_group_ids      = [aws_security_group.k8-node-sg.id]
   subnet_id                   = aws_subnet.mlops-subnets[count.index % length(aws_subnet.mlops-subnets)].id
-  #private_ip                 = ["10.240.0.2${count.index + 1}"]
 
   tags = {
     Name = "worker-${count.index + 1}"

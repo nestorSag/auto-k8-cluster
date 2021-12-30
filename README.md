@@ -27,3 +27,15 @@ Parameters such as the number of controller nodes and worker nodes can be edited
 <img src="./readme-imgs/cluster-architecture.svg">
 
 Nodes of the same type can communicate directly
+
+### Execution
+
+Terraform provisions the infrastructure according to files in the `tf` folder; python scripts in `py` use Terraform's formatted output to create configuration files at runtime using information of the instances' IP addresses. Specifically they create:
+
+* The Ansible inventory
+* certificate signing requests
+* service unit files
+* networking configuration
+* entries in the routing table
+
+Ansible is then used to place config files n each node and start the services.

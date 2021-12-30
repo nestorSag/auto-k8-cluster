@@ -4,9 +4,6 @@
   remote_user: ec2-user
   become_user: root
   tasks:
-    - name: overwrite hostname
-      ansible.builtin.hostname: 
-        name: "{{ ansible_host }}"
     - name: create cert directory
       file:
         path: /home/ec2-user/cluster-certs

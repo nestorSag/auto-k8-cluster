@@ -1,0 +1,6 @@
+# This template is used at runtime to add routing table entries for pod-to-pod communication
+resource "aws_route" "ROUTE_NAME" {
+  route_table_id            = aws_route_table.mlops-vpc-route-table.id
+  destination_cidr_block    = "CIDR_BLOCK"
+  instance_id = "INSTANCE_ID"
+}

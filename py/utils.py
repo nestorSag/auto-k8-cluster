@@ -42,3 +42,18 @@ def get_lb_dns(tf_output: str):
   tf_json = json.loads(tf_output)
   dns = tf_json["lb-dns"]["value"]
   return dns
+
+def get_rt_id(tf_output: str):
+  """Parse terraform json output and returns the main routing table's id
+  
+  Args:
+      tf_output (str): terraform output
+  
+  Returns:
+      str: routing table id
+  """
+  formatted = {}
+  # parse terraform output
+  tf_json = json.loads(tf_output)
+  tbl_id = tf_json["routing-table-id"]["value"]
+  return tbl_id

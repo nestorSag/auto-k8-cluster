@@ -23,41 +23,12 @@ resource "aws_subnet" "mlops-subnets" {
   cidr_block        = "10.240.${count.index}.0/24"
 }
 
-# security groups
-/*resource "aws_security_group" "load-balancer-sg" {
-  provider    = aws.default-region
-  name        = "load balancer security group"
-  description = "Allow traffic from the internet and to K8 control plane"
-  vpc_id      = aws_vpc.mlops-vpc.id
-  ingress {
-    description = "Allow any traffic from the Internet"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-  egress {
-    description = "Allow to redirection to K8 control plane"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = [var.vpc-cidr-block]
-  }
-}*/
-
-
 resource "aws_security_group" "k8-node-sg" {
   provider    = aws.default-region
   name        = "k8-node-sg"
   description = "Allow traffic between K8 nodes"
   vpc_id      = aws_vpc.mlops-vpc.id
-/*  ingress {
-    description = "Allow ingress from load balancer as only valid ingress from the Internet other than SSH"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    security_groups = [aws_security_group.load-balancer-sg.id]
-  }*/
+
   ingress {
     description = "Allow all inter-node communication"
     from_port   = 0
@@ -131,9 +102,6 @@ resource "aws_route_table" "mlops-vpc-route-table" {
   route {
     cidr_block = "0.0.0.0/0"
     gateway_id = aws_internet_gateway.mlops-vpc-gateway.id
-  }
-  lifecycle {
-    ignore_changes = all
   }
   tags = {
     Name = "mlops-vpc-route-table"

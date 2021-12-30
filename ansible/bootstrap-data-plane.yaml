@@ -12,8 +12,8 @@
         - socat
         - conntrack
         - ipset
-    - name: disable swap
-      command: sudo swapoff -a
+    - name: disable swap and enable netfilter
+      command: /usr/bin/bash -c 'sudo swapoff -a && sudo modprobe br_netfilter'
     - name: Download binaries 
       get_url:
         url: '{{ item }}'
