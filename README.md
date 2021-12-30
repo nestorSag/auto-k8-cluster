@@ -20,7 +20,9 @@ Parameters such as the number of controller nodes and worker nodes can be edited
 
 2. From the root folder, run `make setup && export PATH=$(pwd)/bin:$PATH && make ca`. This will download precompiled binaries for `kubectl`, `cfssl` and `cfssljson` to the `bin` folder and add it to `PATH`. It will also bootstrap a certificate authority
 
-3. Run `make cluster`. This might take a while.
+3. If necessary, run `cd tf/ && terraform init` to initialise Terraform
+
+4. From the root folder, run `make cluster`. This will take a while.
 
 ### Architecture
 
